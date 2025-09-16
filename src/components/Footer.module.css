@@ -1,0 +1,87 @@
+.footer {
+  background-color: #0f1724; /* close to site's footer dark */
+  color: #ffffff;
+  padding: 3rem 0 1.5rem 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.content {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 2fr 1fr 1fr;
+  align-items: start;
+}
+
+.brandCol {
+  display: block;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.brandText {
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.description {
+  color: rgba(255,255,255,0.8);
+  max-width: 320px;
+  margin-top: 0.75rem;
+}
+
+.linksCol, .contactCol {
+  display: block;
+}
+
+.title {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.linksList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.link {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  display: block;
+  padding: 0.25rem 0;
+}
+
+.link:hover { color: #ffffff }
+
+.bottom {
+  border-top: 1px solid rgba(255,255,255,0.12);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.copyright { color: rgba(255,255,255,0.6); margin: 0 }
+
+@media (max-width: 767px) {
+  .content { grid-template-columns: 1fr; }
+  .brandText { display: block }
+  .logo { height: 40px }
+}

@@ -1,0 +1,22 @@
+# Создаем файл .gitignore и записываем в него стандартный набор правил для Next.js
+@"
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Build outputs
+/.next/
+/out/
+/build
+
+# Local environment files
+.env*.local
+.env
+
+# Misc
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+"@ | Out-File -FilePath .gitignore -Encoding utf8
