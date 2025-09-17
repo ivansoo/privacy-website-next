@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // Enable full static export
+  output: 'export',
+  basePath: '/articles',
 };
 
 module.exports = nextConfig;

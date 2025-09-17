@@ -1,82 +1,94 @@
-import React from 'react';
+// Файл: src/app/resources/page.jsx
+import Link from 'next/link';
 
-async function getResources() {
-  const base = process.env.STRAPI_URL;
-  const token = process.env.STRAPI_TOKEN;
-
-  // Demo fallback (used when Strapi is not available at build time)
-  const demo = [
-    {
-      id: 'demo-1',
-      title: 'Демо-ресурс',
-      description: 'Это демонстрационный ресурс, Strapi недоступен.',
-      link: '#',
-      type: 'pdf',
-      dateAdded: '2024-01-01',
-      featured: false
-    }
-  ];
-
-  if (!base) return demo;
+async function getContent() {
+  // Запрашиваем всю страницу контента и все ее компоненты
+  // If STRAPI_URL is not configured, return demo content so build can succeed offline.
+  if (!process.env.STRAPI_URL) {
+    return {
+      articles: [
+        {
+          id: 'demo-article-1',
+          title: 'Демо-статья',
+          description: 'Это демонстрационная статья, Strapi недоступен при сборке.',
+          slug: 'demo-article',
+          dateAdded: new Date().toISOString(),
+        },
+      ],
+      resources: [],
+    };
+  }
 
   try {
-    const url = `${base}/api/resources-page?populate[resources_list][populate]=*`;
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      // cache: 'no-store' // keep default so static build can prerender if needed
+    const res = await fetch(`${process.env.STRAPI_URL}/api/site-content?populate[articles][populate]=*&populate[resources][populate]=*`, {
+      headers: { Authorization: `Bearer ${process.env.STRAPI_TOKEN}` },
+      // Оставляем кэш по умолчанию (force-cache) чтобы Next.js мог статически собрать страницу.
     });
-    if (!res.ok) return demo;
-    const json = await res.json();
-    const list = json?.data?.attributes?.resources_list || [];
 
-    // Normalize items
-    return list.map((item, idx) => {
-      // item is component object with fields matching resource_item
-      const id = item.id ?? `r-${idx}`;
-      const title = item.title ?? item.attributes?.title ?? '';
-      const description = item.description ?? item.attributes?.description ?? '';
-      const external_link = item.external_link ?? item.attributes?.external_link ?? null;
-      const type = item.type ?? item.attributes?.type ?? '';
-      const dateAdded = item.dateAdded ?? item.attributes?.dateAdded ?? item.attributes?.dateAdded ?? null;
+    if (!res.ok) {
+      // если сервер вернул ошибку — используем пустые массивы вместо падения сборки
+      return { articles: [], resources: [] };
+    }
 
-      // file could be a media object
-      const fileData = item.file ?? item.attributes?.file ?? null;
-      let fileUrl = null;
-      if (fileData) {
-        // Strapi may return { data: [...] } or direct object depending on populate
-        const data = fileData.data ?? fileData;
-        if (Array.isArray(data)) {
-          fileUrl = data[0]?.attributes?.url ?? null;
-        } else {
-          fileUrl = data?.attributes?.url ?? null;
-        }
-      }
+    const data = await res.json();
+    if (!data || !data.data || !data.data.attributes) {
+      return { articles: [], resources: [] };
+    }
 
-      const link = external_link || fileUrl || '#';
-
-      return { id, title, description, link, type, dateAdded, featured: item.featured ?? false };
-    });
+    return {
+      articles: data.data.attributes.articles || [],
+      resources: data.data.attributes.resources || [],
+    };
   } catch (err) {
-    return demo;
+    // В случае сетевой ошибки возвращаем запасные данные
+    return {
+      articles: [
+        {
+          id: 'demo-article-1',
+          title: 'Демо-статья',
+          description: 'Это демонстрационная статья, Strapi недоступен при сборке.',
+          slug: 'demo-article',
+          dateAdded: new Date().toISOString(),
+        },
+      ],
+      resources: [],
+    };
   }
 }
 
 export default async function ResourcesPage() {
-  const resources = await getResources();
+  const { articles, resources } = await getContent();
+  const allContent = [...articles, ...resources].sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
 
   return (
     <div className="container">
-      <h1>Ресурсы</h1>
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem'}}>
-        {resources.map((r) => (
-          <article key={r.id} style={{border: '1px solid var(--border-color)', padding: '1rem', borderRadius: '6px', background: '#fff'}}>
-            <h3 style={{marginTop:0}}>{r.title}</h3>
-            <p style={{color: 'var(--text-secondary)'}}>{r.description}</p>
-            <p style={{marginBottom: '0.5rem', fontSize: '0.9rem'}}><strong>Тип:</strong> {r.type}</p>
-            <a href={r.link} target="_blank" rel="noopener noreferrer">Открыть</a>
-          </article>
-        ))}
-      </div>
+      <h1>Все материалы</h1>
+      {allContent.length > 0 ? (
+        <ul>
+          {allContent.map((item) => (
+            <li key={item.id}>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+              {/* Если у элемента есть slug, это статья, и ссылка внутренняя. Иначе - внешняя. */}
+              {item.slug ? (
+                <Link href={`/${item.slug}`}>
+                  Читать статью
+                </Link>
+              ) : (
+                <a 
+                  href={item.external_link || `${process.env.STRAPI_URL}${item.file.data.attributes.url}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Перейти к материалу ({item.type})
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Материалы скоро появятся.</p>
+      )}
     </div>
   );
 }

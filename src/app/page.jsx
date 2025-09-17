@@ -3,63 +3,51 @@ import React from 'react';
 async function getArticles() {
   const base = process.env.STRAPI_URL;
   if (!base) {
-    // temporary fallback to avoid server error when env is not set
     return [
-      { id: 1, attributes: { slug: 'demo-article', title: 'Примерная статья' } }
+      {
+        id: 'demo-article-1',
+        title: 'Демо-статья',
+        description: 'Демо-статья, Strapi не настроен.',
+        slug: 'demo-article',
+        dateAdded: new Date().toISOString(),
+      },
     ];
   }
 
   try {
-    const res = await fetch(`${base}/api/articles`, {
+    const res = await fetch(`${base}/api/articles-page?populate[articles][populate]=*&fields[articles]=title,slug,description,dateAdded`, {
       headers: { Authorization: `Bearer ${process.env.STRAPI_TOKEN}` },
-      cache: 'no-store'
     });
-
-    if (!res.ok) {
-      // Log server response for debugging and return fallback
-      const text = await res.text().catch(() => '');
-      try {
-        // Only log in development; use warn instead of error to avoid dev overlay
-        if (process.env.NODE_ENV !== 'production' && typeof console !== 'undefined' && typeof console.warn === 'function') {
-          console.warn('Strapi responded with non-ok status', res.status, text);
-        }
-      } catch (e) {
-        /* ignore logging errors */
-      }
-      return [
-        { id: 1, attributes: { slug: 'demo-article', title: 'Примерная статья' } }
-      ];
-    }
-
-    const data = await res.json();
-    return data.data;
+    if (!res.ok) return [];
+    const json = await res.json();
+    const articles = json?.data?.attributes?.articles || [];
+    return Array.isArray(articles) ? articles : [];
   } catch (err) {
-    // network or parsing error - log and return fallback
-    try {
-      if (process.env.NODE_ENV !== 'production' && typeof console !== 'undefined' && typeof console.warn === 'function') {
-        console.warn('Failed to fetch articles from Strapi:', err);
-      }
-    } catch (e) {}
-    return [
-      { id: 1, attributes: { slug: 'demo-article', title: 'Примерная статья' } }
-    ];
+    return [];
   }
 }
 
-export default async function HomePage() {
+export default async function ArticlesIndexPage() {
   const articles = await getArticles();
+
   return (
     <div className="container">
-      <h1>Статьи</h1>
-      <ul>
-        {articles.map((article) => (
-          <li key={article.id}>
-            <a href={`/articles/${article.attributes.slug}`}>
-              {article.attributes.title}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <h1>Материалы</h1>
+      {articles.length === 0 ? (
+        <p>Материалы скоро появятся.</p>
+      ) : (
+        <ul>
+          {articles.map((a) => (
+            <li key={a.id}>
+              <h3>{a.title}</h3>
+              {a.description && <p>{a.description}</p>}
+              <p>
+                <a href={`/articles/${a.slug}`}>Читать</a>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
